@@ -1,0 +1,98 @@
+%%%%nnCostFunction.m
+
+% eyeを使うことで正方行列を入力できる
+% num_labelsで列数を決め、各yの値に相当する部分に1を入力する
+Y = eye(num_labels)(y, :);
+% 以下と同じ
+% Y = zeros(m, num_labels);
+% for i = 1:m
+% Y(i,y(i)) = 1;
+% endfor 
+
+
+%[5000, 400]次元。Xは入力
+a1 = X;
+
+%　バイアス1を追加してtheta1をかける。'は転置行列
+z2 = [ones(m, 1), a1] * Theta1';
+a2 = sigmoid(z2);
+z3 = [ones(m, 1), a2] * Theta2';
+h = sigmoid(z3);
+
+% コスト関数を作成
+% Yは[5000,10]、hも[5000,10]なので、.*で行列の各要素の積を求める
+cost = -Y .* log(h) - (1-Y) .* log(1-h);
+%1.row, 2.col
+sum_cost = sum(cost, 2);
+J = (1/m) * sum(sum_cost);
+
+%%%%%%%%%%%%%%%
+
+
+%%%1.4
+lambda = 1;
+
+%正規化項を追加して計算(バイアス項は除外)
+theta1_norm = Theta1(: , 2:end);
+theta2_norm = Theta2(: , 2:end);
+
+% sumsq (x, dim)
+% 次元 dim 方向の積和を計算する。 
+% dim が省略されたときは，1を指定した（列方向に積和をとる）とみなす。 
+% 例外として， x がベクトルで dim を省略したとき，要素の積和を返す(二乗してから総和をとる)。
+% sumsq(x,1)は行ごとの総和で、sumsq(x,2)なら列ごとの総和を行う(デフォルトは行ごとの足し算)
+sum_theta1_norm = sumsq(theta1_norm);
+sum_theta2_norm = sumsq(theta2_norm);
+
+reg = lambda / (2 * m) * (sum(sum_theta1_norm) + sum(sum_theta2_norm));
+J = J + reg;
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%
+%sigmoidGradient.m
+
+% .*で各要素の積を計算する
+g = sigmoid(z) .* (1 - sigmoid(z));
+
+
+
+%%%%
+%nnCostFunction.m
+
+delta1 = 0.0;
+delta2 = 0.0;
+
+%grad
+for i = 1:m
+a1 = [1; X(m, :)']; %[401, 1]
+
+%Theta1[25, 401]
+z2 = Theta1 * a1; %[25, 1]
+a2 = [1; sigmoid(z2)]; %[26, 1]
+
+%Theta2[10, 26]
+z3 = Theta2 * a2; %[10, 1] 
+a3 = sigmoid(z3); %[10, 1]
+
+% Y(m, :)[1, 10]
+delta_layer3 = a3 - Y(m, :)'; %[10, 1]
+
+% theta2_norm[10, 25] delta_layer3[10, 1]
+% sigmoidGradient(z2)[1, 25]
+delta_layer2 = theta2_norm' * delta_layer3 .* sigmoidGradient(z2);
+
+delta2 = delta2 + delta_layer3 * a2';
+delta1 = delta1 + delta_layer2 * a1'; 
+
+endfor
+
+
+Theta1_grad(:, 2:end) = Theta1_grad(:, 2:end) + ((lambda / m) * theta1_norm);
+Theta2_grad(:, 2:end) = Theta2_grad(:, 2:end) + ((lambda / m) * theta2_norm);
+
+
+
